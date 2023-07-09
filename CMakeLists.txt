@@ -37,5 +37,8 @@ target_link_libraries(uvw_http_client_test
         PRIVATE Threads::Threads
         PRIVATE ${LIBUV_LDFLAGS}
         PRIVATE ${LIBUV_LIBRARIES}
-        PRIVATE ${httplib_LIBRARIES}
+        PRIVATE ${LIBGNUTLS_LDFLAGS}
+        PRIVATE ${LIBGNUTLS_LIBRARIES}
+        PRIVATE ${LIBNGHTTP2_LDFLAGS}
+        PRIVATE ${LIBNGHTTP2_LIBRARIES}
         uvw_http_client)
