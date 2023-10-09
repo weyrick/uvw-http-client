@@ -30,7 +30,7 @@ HTTPSSession::HTTPSSession(std::shared_ptr<uvw::TCPHandle> handle,
     , _handle{handle}
     , _tls_state{LinkState::HANDSHAKE}
     , _handshake_error{handshake_error_handler}
-    , _target{target}
+    , _target{std::move(target)}
     , _method{method}
     , _current_session{nullptr}
 {

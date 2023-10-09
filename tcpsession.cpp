@@ -8,14 +8,10 @@ TCPSession::TCPSession(std::shared_ptr<uvw::TCPHandle> handle,
                        malformed_data_cb malformed_data_handler,
                        got_dns_msg_cb got_dns_msg_handler,
                        connection_ready_cb connection_ready_handler)
-    : _handle{handle},
+    : _handle{std::move(handle)},
       _malformed_data{std::move(malformed_data_handler)},
       _got_dns_msg{std::move(got_dns_msg_handler)},
       _connection_ready{std::move(connection_ready_handler)}
-{
-}
-
-TCPSession::~TCPSession()
 {
 }
 

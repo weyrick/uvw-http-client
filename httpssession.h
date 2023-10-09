@@ -41,7 +41,7 @@ public:
                  Target target,
                  HTTPMethod method);
 
-    virtual ~HTTPSSession();
+    ~HTTPSSession() override;
 
     virtual bool setup();
 

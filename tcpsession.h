@@ -15,7 +15,7 @@ public:
                malformed_data_cb malformed_data_handler,
                got_dns_msg_cb got_dns_msg_handler,
                connection_ready_cb connection_ready_handler);
-    virtual ~TCPSession();
+    virtual ~TCPSession() = default;
 
     virtual bool setup();
 
