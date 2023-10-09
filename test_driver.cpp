@@ -9,43 +9,46 @@ void connect_tcp_events(std::shared_ptr<uvw::TCPHandle> tcp_handle, std::shared_
 
     // SOCKET: local socket was closed, cleanup resources and possibly restart another connection
     tcp_handle->on<uvw::CloseEvent>([&tcp_handle, &tcp_session](uvw::CloseEvent &event, uvw::TCPHandle &h) {
-        if (tcp_handle.get()) {
+        if (tcp_handle) {
             tcp_handle->stop();
         }
         tcp_session.reset();
-//        tcp_handle.reset();
+        tcp_handle.reset();
     });
 
     // SOCKET: socket error
     tcp_handle->on<uvw::ErrorEvent>([&tcp_handle, &tcp_session](uvw::ErrorEvent &event, uvw::TCPHandle &h) {
-        std::cerr <<
-                  tcp_handle->sock().ip << ":" << tcp_handle->sock().port <<
+        std::cout << "ErrorEvent: " << tcp_handle->sock().ip << ":" << tcp_handle->sock().port <<
                   " - " << event.what() << std::endl;
-        // triggers an immediate connection retry.
         tcp_handle->close();
     });
 
     // INCOMING: remote peer closed connection, EOF
     tcp_handle->on<uvw::EndEvent>([&tcp_session](uvw::EndEvent &event, uvw::TCPHandle &h) {
+        std::cout << "EndEvent" << std::endl;
         tcp_session->on_end_event();
     });
 
     // OUTGOING: we've finished writing all our data and are shutting down
     tcp_handle->on<uvw::ShutdownEvent>([&tcp_session](uvw::ShutdownEvent &event, uvw::TCPHandle &h) {
+        std::cout << "ShutdownEvent" << std::endl;
         tcp_session->on_shutdown_event();
     });
 
     // INCOMING: remote peer sends data, pass to session
     tcp_handle->on<uvw::DataEvent>([&tcp_session](uvw::DataEvent &event, uvw::TCPHandle &h) {
+        std::cout << "DataEvent" << std::endl;
         tcp_session->receive_data(event.data.get(), event.length);
     });
 
     // OUTGOING: write operation has finished
     tcp_handle->on<uvw::WriteEvent>([](uvw::WriteEvent &event, uvw::TCPHandle &h) {
+        std::cout << "WriteEvent" << std::endl;
     });
 
     // SOCKET: on connect
     tcp_handle->on<uvw::ConnectEvent>([&tcp_handle, &tcp_session](uvw::ConnectEvent &event, uvw::TCPHandle &h) {
+        std::cout << "ConnectEvent" << std::endl;
         tcp_session->on_connect_event();
 
         // start reading from incoming stream, fires DataEvent when receiving
@@ -62,10 +65,10 @@ int main() {
     std::vector<std::string> raw_target_list;
     raw_target_list.emplace_back("https://google.com");
     auto request = loop->resource<uvw::GetAddrInfoReq>();
-    for (uint i = 0; i < raw_target_list.size(); i++) {
+    for (const auto & i : raw_target_list) {
         uvw::Addr addr;
         struct http_parser_url parsed = {};
-        std::string url = raw_target_list[i];
+        std::string url = i;
         if (url.rfind("https://", 0) != 0) {
             url.insert(0, "https://");
         }
@@ -79,7 +82,7 @@ int main() {
         auto target_resolved = request->addrInfoSync(authority, "443");
         if (!target_resolved.first) {
             std::cerr << "unable to resolve target address: " << authority << std::endl;
-            if (raw_target_list[i] == "file") {
+            if (i == "file") {
                 std::cerr << "(did you mean to include --targets?)" << std::endl;
             }
             return 1;
@@ -89,7 +92,7 @@ int main() {
             node = node->ai_next;
         }
         if (!node) {
-            std::cerr << "name did not resolve to valid IP address for this inet family: " << raw_target_list[i]
+            std::cerr << "name did not resolve to valid IP address for this inet family: " << i
                       << std::endl;
             return 1;
         }
@@ -108,14 +111,17 @@ int main() {
     auto tcp_handle = loop->resource<uvw::TCPHandle>(family);
 
     auto malformed_data = [tcp_handle]() {
+        std::cout << "malformed_data" << std::endl;
         tcp_handle->close();
     };
     auto got_dns_message = [](std::unique_ptr<const char[]> data,
                                   size_t size) {
+        std::cout << "got_dns_message" << std::endl;
         //process_wire(data.get(), size);
     };
     auto connection_ready = [tcp_session]() {
         /** SEND DATA **/
+        std::cout << "connection_ready" << std::endl;
         //tcp_session->write(std::move(std::get<0>(qt)), std::get<1>(qt));
     };
 
@@ -129,6 +135,11 @@ int main() {
                                                  nullptr,
                                                  target_list[0],
                                                  HTTPMethod::GET);
+    if (!tcp_session->setup()) {
+        std::cout << "setup failed" << std::endl;
+    }
+    std::cout << "connecting to " << target_list[0].address << ":" << 443 << std::endl;
+    tcp_handle->connect<uvw::IPv4>(target_list[0].address, 443);
 
     // ----
     loop->run();

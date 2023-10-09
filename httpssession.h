@@ -43,9 +43,9 @@ public:
 
     ~HTTPSSession() override;
 
-    virtual bool setup();
+    virtual bool setup() override;
 
-    virtual void on_connect_event();
+    virtual void on_connect_event() override;
 
     void send_tls(void *data, size_t len);
 
